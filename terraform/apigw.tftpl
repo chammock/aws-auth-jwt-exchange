@@ -1,0 +1,134 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "aws-auth-jwt-exchange",
+        "description": "Exchange AWS auth for JWT",
+        "version": "version1"
+    },
+    "paths": {
+        "/.well-known/openid-configuration": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Empty"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-amazon-apigateway-integration": {
+                    "responses": {
+                        "default": {
+                            "statusCode": "200",
+                            "responseTemplates": {
+                                "application/json": "{    \"issuer\": \"${ISSUER}\",    \"jwks_uri\": \"${ISSUER}/.well-known/jwks.json\"}"
+                            }
+                        }
+                    },
+                    "requestTemplates": {
+                        "application/json": "{\"statusCode\": 200}"
+                    },
+                    "passthroughBehavior": "when_no_match",
+                    "type": "mock"
+                }
+            }
+        },
+        "/.well-known/jwks.json": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "description": "200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Empty"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-amazon-apigateway-integration": {
+                    "responses": {
+                        "default": {
+                            "statusCode": "200",
+                            "responseTemplates": {
+                                "application/json": ${JWKS}
+                            }
+                        }
+                    },
+                    "requestTemplates": {
+                        "application/json": "{\n  \"statusCode\":200\n}"
+                    },
+                    "passthroughBehavior": "when_no_match",
+                    "type": "mock"
+                }
+            }
+        },
+        "/": {
+            "post": {
+                "responses": {
+                    "200": {
+                        "description": "200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Empty"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sigv4": []
+                    }
+                ],
+                "x-amazon-apigateway-integration": {
+                    "httpMethod": "POST",
+                    "uri": "arn:aws:apigateway:${REGION}:lambda:path/2015-03-31/functions/${LAMBDA_ARN}/invocations",
+                    "responses": {
+                        "default": {
+                            "statusCode": "200"
+                        }
+                    },
+                    "passthroughBehavior": "when_no_match",
+                    "contentHandling": "CONVERT_TO_TEXT",
+                    "type": "aws_proxy"
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Empty": {
+                "title": "Empty Schema",
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "sigv4": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "x-amazon-apigateway-authtype": "awsSigv4"
+            }
+        }
+    },
+    "x-amazon-apigateway-policy": {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "*"
+                },
+                "Action": "execute-api:Invoke",
+                "Resource": "*"
+            }
+        ]
+    }
+}
